@@ -6,6 +6,7 @@ RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 EXPORTS_DIR = DATA_DIR / "exports"
 DB_PATH = DATA_DIR / "transactions.db"
+LOGS_DIR = BASE_DIR / "logs"
 
 # Confidence thresholds
 CONFIDENCE_AUTO_ACCEPT: float = 0.85
