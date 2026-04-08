@@ -21,4 +21,10 @@ def setup_logging(level: int = logging.INFO) -> None:
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(logging.Formatter(_FMT))
 
-    logging.basicConfig(level=level, handlers=[file_handler, console_handler])
+    # Force root logger reconfiguration so framework-provided handlers
+    # (for example Streamlit defaults) do not block our file handler.
+    logging.basicConfig(
+        level=level,
+        handlers=[file_handler, console_handler],
+        force=True,
+    )

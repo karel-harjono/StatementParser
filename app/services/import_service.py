@@ -1,13 +1,13 @@
 import logging
 from pathlib import Path
 
+from app.categorization.categorizer import Categorizer
+from app.config import CONFIDENCE_AUTO_ACCEPT
 from app.ingestion.statement_router import StatementRouter
 from app.normalization.normalizer import Normalizer
-from app.categorization.categorizer import Categorizer
-from app.storage.repositories import TransactionRepository, StatementRepository
-from app.storage.db import init_db
 from app.normalization.transaction_model import Transaction
-from app.config import CONFIDENCE_AUTO_ACCEPT
+from app.storage.db import init_db
+from app.storage.repositories import StatementRepository, TransactionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +27,15 @@ class ImportService:
         self.repo = repo or TransactionRepository()
         self.statement_repo = statement_repo or StatementRepository()
 
-    def import_file(self, file_path: str) -> list[Transaction]:
+    def import_file(
+        self, file_path: str, source_name: str | None = None
+    ) -> list[Transaction]:
         init_db()
 
-        file_name = Path(file_path).name
+        file_name = source_name or Path(file_path).name
         logger.info("ImportService: starting import of %s", file_name)
 
-        raw_rows = self.parser_router.parse(file_path)
+        raw_rows = self.parser_router.parse(file_path, source_name=file_name)
         if not raw_rows:
             logger.warning("ImportService: no rows parsed from %s", file_name)
             return []

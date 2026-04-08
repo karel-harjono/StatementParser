@@ -70,11 +70,13 @@ class RbcPdfParser:
     def can_handle(self, file_path: str) -> bool:
         return file_path.lower().endswith(".pdf")
 
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         pdf_path = Path(file_path)
-        file_name = pdf_path.stem
+        file_name = Path(source_name).stem if source_name else pdf_path.stem
 
-        statement_year, statement_month = self._extract_statement_date(pdf_path)
+        statement_year, statement_month = self._extract_statement_date(
+            pdf_path, source_name
+        )
 
         lines = []
         with pdfplumber.open(file_path) as pdf:
@@ -121,21 +123,24 @@ class RbcPdfParser:
         logger.info("RbcPdfParser: parsed %d rows from %s", len(rows), file_path)
         return rows
 
-    def _extract_statement_date(self, pdf_path: Path) -> tuple[int, int]:
+    def _extract_statement_date(
+        self, pdf_path: Path, source_name: str | None = None
+    ) -> tuple[int, int]:
         """
         Pull closing year and month from the filename.
         Expects the last space-delimited token in the stem to be 'YYYY-MM-DD'.
         Falls back to today's year/month if parsing fails.
         """
         try:
-            date_part = pdf_path.stem.split(" ")[-1]  # e.g. '2022-01-17'
+            name_stem = Path(source_name).stem if source_name else pdf_path.stem
+            date_part = name_stem.split(" ")[-1]  # e.g. '2022-01-17'
             parts = date_part.split("-")
             return int(parts[0]), int(parts[1])
         except (IndexError, ValueError):
             logger.warning(
                 "RbcPdfParser: could not parse statement date from filename %r; "
                 "defaulting to current year/month",
-                pdf_path.name,
+                source_name or pdf_path.name,
             )
             today = datetime.date.today()
             return today.year, today.month

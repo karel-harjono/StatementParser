@@ -13,7 +13,7 @@ class BaseStatementParser(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         raise NotImplementedError
 
 
@@ -38,9 +38,9 @@ class AmexCsvParser(BaseStatementParser):
         except Exception:
             return False
 
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         df = pd.read_csv(file_path)
-        file_name = Path(file_path).stem
+        file_name = Path(source_name).stem if source_name else Path(file_path).stem
         rows = []
         for _, row in df.iterrows():
             transaction_date = pd.to_datetime(
@@ -83,7 +83,7 @@ class GenericCsvParser(BaseStatementParser):
     def can_handle(self, file_path: str) -> bool:
         return file_path.lower().endswith(".csv")
 
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         df = pd.read_csv(file_path)
         lower_cols = {c.lower(): c for c in df.columns}
 
@@ -97,7 +97,7 @@ class GenericCsvParser(BaseStatementParser):
                 f"Found: {list(df.columns)}"
             )
 
-        file_name = Path(file_path).stem
+        file_name = Path(source_name).stem if source_name else Path(file_path).stem
         rows = []
         for _, row in df.iterrows():
             rows.append(

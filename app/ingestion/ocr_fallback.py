@@ -13,7 +13,7 @@ class OcrFallbackParser:
     def can_handle(self, file_path: str) -> bool:
         return file_path.lower().endswith(".pdf")
 
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         raise NotImplementedError(
             "OCR fallback is not implemented. "
             "Install pytesseract + pdf2image and implement this parser."

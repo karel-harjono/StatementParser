@@ -254,6 +254,24 @@ class TestRbcPdfParser:
         # Just verify it doesn't raise and returns a row
         assert len(rows) == 1
 
+    def test_parse_uses_source_name_for_statement_date(self, tmp_path):
+        # Streamlit saves uploads to temporary names; parser should use original name.
+        pdf_path = tmp_path / "tmp_upload.pdf"
+        pdf_path.write_bytes(b"")
+
+        lines = [_make_rbc_line("DEC 15 DEC 16 COSTCO -$85.00")]
+
+        with patch(
+            "app.ingestion.pdf_parser.pdfplumber.open",
+            return_value=_mock_pdfplumber(lines),
+        ):
+            rows = RbcPdfParser().parse(
+                str(pdf_path), source_name="Visa Statement-2423 2023-01-17.pdf"
+            )
+
+        assert rows[0]["transaction_date"] == "2022-12-15"
+        assert rows[0]["posting_date"] == "2022-12-16"
+
 
 # ---------------------------------------------------------------------------
 # GenericCsvParser (retained from original suite)

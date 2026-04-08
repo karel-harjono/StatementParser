@@ -28,7 +28,7 @@ class StatementRouter:
             GenericCsvParser(),  # generic CSV last – most permissive
         ]
 
-    def parse(self, file_path: str) -> list[dict]:
+    def parse(self, file_path: str, source_name: str | None = None) -> list[dict]:
         for parser in self.parsers:
             if parser.can_handle(file_path):
                 logger.info(
@@ -36,5 +36,5 @@ class StatementRouter:
                     parser.__class__.__name__,
                     file_path,
                 )
-                return parser.parse(file_path)
+                return parser.parse(file_path, source_name=source_name)
         raise ValueError(f"No parser found for {file_path!r}")
