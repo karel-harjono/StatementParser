@@ -5,7 +5,7 @@ from typing import Optional
 from app.normalization.transaction_model import Transaction, make_hash_key
 from app.normalization.cleaners import clean_description
 from app.normalization.merchant_rules import extract_merchant
-from app.utils.dates import safe_parse_date
+from dateutil.parser import parse as dateutil_parse
 
 
 class Normalizer:
@@ -56,7 +56,7 @@ class Normalizer:
             return None
         if isinstance(value, date):
             return value
-        result = safe_parse_date(str(value))
+        result = dateutil_parse(str(value))
         # Fall back to epoch rather than None so the dataclass always has a date
         if result is None:
             from datetime import date as _date

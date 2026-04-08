@@ -5,7 +5,7 @@ from decimal import Decimal
 from app.storage.db import get_connection
 from app.normalization.transaction_model import Transaction
 from app.categorization.rules_engine import CategoryRule
-from app.utils.dates import safe_parse_date
+from dateutil.parser import parse as dateutil_parse
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +129,8 @@ class TransactionRepository:
             institution=row["institution"],
             account_name=row["account_name"],
             statement_id=row["statement_id"],
-            transaction_date=safe_parse_date(str(row["transaction_date"])),
-            posting_date=safe_parse_date(str(row["posting_date"])) if row["posting_date"] else None,
+            transaction_date=dateutil_parse(str(row["transaction_date"])),
+            posting_date=dateutil_parse(str(row["posting_date"])) if row["posting_date"] else None,
             description_raw=row["description_raw"],
             description_clean=row["description_clean"],
             amount=Decimal(row["amount"]),
@@ -147,7 +147,7 @@ class TransactionRepository:
 
 
 class StatementRepository:
-    def save(self, file_name: str, institution: str, source_type: str) -> int:
+    def save(self, file_name: str, institution: str, source_type: str) -> int | None:
         conn = get_connection()
         with conn:
             cursor = conn.execute(
