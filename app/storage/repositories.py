@@ -1,11 +1,12 @@
-import sqlite3
 import logging
+import sqlite3
 from decimal import Decimal
 
-from app.storage.db import get_connection
-from app.normalization.transaction_model import Transaction
-from app.categorization.rules_engine import CategoryRule
 from dateutil.parser import parse as dateutil_parse
+
+from app.categorization.rules_engine import CategoryRule
+from app.normalization.transaction_model import Transaction
+from app.storage.db import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,51 @@ class TransactionRepository:
             """
         ).fetchall()
         return [self._row_to_tx(r) for r in rows]
+
+    _PENDING_WHERE = (
+        "review_status = 'pending' OR category = 'Other' OR category IS NULL"
+    )
+    _SORT_MAP = {
+        "date_desc": "transaction_date DESC",
+        "date_asc": "transaction_date ASC",
+        "amount_desc": "CAST(amount AS REAL) DESC",
+        "amount_asc": "CAST(amount AS REAL) ASC",
+        "confidence_asc": "COALESCE(confidence, 0) ASC",
+    }
+
+    def count_pending_review(self) -> int:
+        conn = get_connection()
+        row = conn.execute(
+            f"SELECT COUNT(*) FROM transactions WHERE {self._PENDING_WHERE}"
+        ).fetchone()
+        return row[0]
+
+    def get_pending_review_paginated(
+        self,
+        offset: int,
+        limit: int,
+        sort: str = "date_desc",
+    ) -> list[Transaction]:
+        order = self._SORT_MAP.get(sort, "transaction_date DESC")
+        conn = get_connection()
+        rows = conn.execute(
+            f"""
+            SELECT * FROM transactions
+            WHERE {self._PENDING_WHERE}
+            ORDER BY {order}
+            LIMIT ? OFFSET ?
+            """,
+            (limit, offset),
+        ).fetchall()
+        return [self._row_to_tx(r) for r in rows]
+
+    def get_pending_descriptions(self) -> list[str]:
+        """Return all description_clean values for pending transactions (lightweight)."""
+        conn = get_connection()
+        rows = conn.execute(
+            f"SELECT description_clean FROM transactions WHERE {self._PENDING_WHERE}"
+        ).fetchall()
+        return [r[0] for r in rows if r[0]]
 
     def get_all(self, filters: dict | None = None) -> list[Transaction]:
         conn = get_connection()
@@ -130,7 +176,9 @@ class TransactionRepository:
             account_name=row["account_name"],
             statement_id=row["statement_id"],
             transaction_date=dateutil_parse(str(row["transaction_date"])),
-            posting_date=dateutil_parse(str(row["posting_date"])) if row["posting_date"] else None,
+            posting_date=dateutil_parse(str(row["posting_date"]))
+            if row["posting_date"]
+            else None,
             description_raw=row["description_raw"],
             description_clean=row["description_clean"],
             amount=Decimal(row["amount"]),
