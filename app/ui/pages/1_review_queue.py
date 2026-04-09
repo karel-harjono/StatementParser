@@ -19,6 +19,7 @@ import streamlit as st
 from app.categorization.categories import CATEGORIES
 from app.categorization.rules_engine import CategoryRule
 from app.services.feedback_service import FeedbackService
+from app.services.recategorization_service import RecategorizationService
 from app.storage.db import init_db
 from app.storage.repositories import RulesRepository, TransactionRepository
 from app.ui.components.category_editor import render_category_editor
@@ -99,7 +100,8 @@ with st.sidebar:
                     active=True,
                 )
             )
-            st.success(f"Rule added: {sb_pattern!r} → {sb_cat}")
+            updated = RecategorizationService(repo=repo, rules_repo=rules_repo).recategorize_pending()
+            st.success(f"Rule added: {sb_pattern!r} → {sb_cat}. Re-evaluated {updated} pending transactions.")
             st.rerun()
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -322,9 +324,11 @@ for tx in page_txs:
                             active=True,
                         )
                     )
+                    updated = RecategorizationService(repo=repo, rules_repo=rules_repo).recategorize_pending()
                     st.success(
                         f"Rule added: {rl_pattern!r} → {rl_cat}. "
-                        "Click **🔄 Refresh View** above to re-evaluate the queue."
+                        f"Re-evaluated {updated} pending transactions. "
+                        "Click **🔄 Refresh View** to update the queue."
                     )
 
 # ── Pagination controls (bottom, mirrors top) ─────────────────────────────────
